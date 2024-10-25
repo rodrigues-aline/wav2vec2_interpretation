@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 class DimensionalityReduction(ABC):
     def __init__(self, output_folder):
-        self.output_folder = output_folder
+        self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.seed = 1024
         
         pre  = pkl.load(open(f"{self.output_folder}/data/pretrained_embeddings.pkl", "rb"))

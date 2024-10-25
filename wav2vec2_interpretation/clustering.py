@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 class Clustering(ABC):
     def __init__(self, output_folder: str, path_vocab: str):
-        self.output_folder = output_folder
+        self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.path_vocab = path_vocab
         
         self.vocab = load(open(self.path_vocab))
@@ -49,16 +49,15 @@ class Clustering(ABC):
         
     
     def evaluate_clusters(self, save: bool = True) -> dict:
-        labs_cnn, _,  _, _              = pkl.load(open(f"{self.output_folder}/data/cnn_kmeans_clusters","rb"))
-        labs_pre, _,  labs_pre_umap, _  = pkl.load(open(f"{self.output_folder}/data/pre_kmeans_clusters","rb"))
-        labs_fine, _, labs_fine_umap, _ = pkl.load(open(f"{self.output_folder}/data/fine_kmeans_clusters","rb"))
+        labs_cnn, _,  _, _              = pkl.load(open(f"{self.output_folder}/data/cnn_kmeans_clusters.pkl","rb"))
+        labs_pre, _,  labs_pre_umap, _  = pkl.load(open(f"{self.output_folder}/data/pre_kmeans_clusters.pkl","rb"))
+        labs_fine, _, labs_fine_umap, _ = pkl.load(open(f"{self.output_folder}/data/fine_kmeans_clusters.pkl","rb"))
 
         metrics_asr = dict()
         for f in [adjusted_mutual_info_score, mutual_info_score, homogeneity_score, completeness_score]:
             m = str(f).split(' ')[1]
             metrics_asr[m] = dict()
 
-            #print(f)
             metrics_asr[m]["CNN vs Predictions"] = f(self.lab, labs_cnn)
             metrics_asr[m]["CNN vs Pre"]         = f(labs_pre, labs_cnn)
             metrics_asr[m]["CNN vs Fine"]        = f(labs_fine, labs_cnn)
@@ -73,19 +72,14 @@ class Clustering(ABC):
 
             metrics_asr[m]["Fine vs Pre"]      = f(labs_fine, labs_pre)
             metrics_asr[m]["Fine vs Pre UMAP"] = f(labs_fine_umap, labs_pre_umap)
-            
-            #print(metrics_asr[m])
 
         m = 'silhouette_scores'
         metrics_asr[m] = dict()
-        #print(m)
 
         metrics_asr[m]['pretrained UMAP'] = silhouette_score(self.data['pre'], labs_pre_umap, metric='cosine')
         metrics_asr[m]['pretrained']      = silhouette_score(self.data['pre'], labs_pre, metric='cosine')
         metrics_asr[m]['finetuned']       = silhouette_score(self.data['fine'], labs_fine_umap, metric='cosine')
         metrics_asr[m]['finetuned']       = silhouette_score(self.data['fine'], labs_fine, metric='cosine')
-
-        #print(metrics_asr[m])
         
         if save:
             with open(f'{self.output_folder}/data/eval_clusters_metrics.json', 'w') as f:
@@ -95,7 +89,7 @@ class Clustering(ABC):
         
     
     def evaluate_clusters_char(self, type_embedding: str, save: bool = True) -> dict:
-        labs, _, _, _ = pkl.load(open(f"{self.output_folder}/data/{type_embedding}_kmeans_clusters","rb"))        
+        labs, _, _, _ = pkl.load(open(f"{self.output_folder}/data/{type_embedding}_kmeans_clusters.pkl","rb"))        
         discovered_map = {}
         clusters_char ={}
 
@@ -112,20 +106,13 @@ class Clustering(ABC):
             percent = distr[max_category]/np.sum(distr)
             clusters_char[self.inv_vocab[idx]] = {'max_category': float(max_category), 'percent': str(percent)+'%'}
 
-        print(discovered_map)
-
         mapping = {}
         for idx in range(np.max(labs)+1):
-            print(labs)
-            print(idx)
             data = self.lab[labs==idx]
             distr,_ = np.histogram(data, list(np.arange(np.max(labs))))
-            print(distr)
             max_category = np.argmax(distr[1:])
             mapping[idx] = max_category
             
-        print(mapping)
-        
         if save:
             with open(f'{self.output_folder}/data/eval_clusters_discovered_map_{type_embedding}.json', 'w') as f:
                 dump(discovered_map, f, indent=4, ensure_ascii=False)
@@ -171,22 +158,31 @@ class Clustering(ABC):
         plt.savefig(f"{self.output_folder}/images/{type_embedding}_tsne_cluster_kmeans.eps", bbox_inches='tight')
         plt.close('all')
         plt.figure().clear()
+        
+        for i in unique_labels:
+            idx = np.where(labs==i)
+            plt.scatter(self.data_comp[type_embedding]['umap'][idx[0], 0], self.data_comp[type_embedding]['umap'][idx[0], 1], s=0.01, color =cmaps[i], label = "cluster_"+str(i))
 
-        pkl.dump([labs, labs_pca, labs_umap, labs_tsne], open(f"{self.output_folder}/data/{type_embedding}_kmeans_clusters", "wb"))
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=3, markerscale=16)
+        plt.savefig(f"{self.output_folder}/images/{type_embedding}_umap_cluster_kmeans.eps", bbox_inches='tight')
+        plt.close('all')
+        plt.figure().clear()
+
+        pkl.dump([labs, labs_pca, labs_umap, labs_tsne], open(f"{self.output_folder}/data/{type_embedding}_kmeans_clusters.pkl", "wb"))
         
     
     def clustering_cnn(self):
         clustering_cnn = KMeans(n_clusters=37, random_state=0).fit(self.data['cnn'])
         labs_cnn = clustering_cnn.labels_
 
-        clustering_cnn_vis = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['cnn_umap'])
+        clustering_cnn_vis = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['umap'])
         labs_cnn_umap = clustering_cnn_vis.labels_
 
-        clustering_cnn_vis_pca = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['cnn_pca'])
+        clustering_cnn_vis_pca = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['pca'])
         labs_cnn_pca = clustering_cnn_vis_pca.labels_
 
-        clustering_cnn_vis_tsne = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['cnn_tsne'])
+        clustering_cnn_vis_tsne = KMeans(n_clusters=37, random_state=0).fit(self.data_comp['cnn']['tsne'])
         labs_cnn_tsne = clustering_cnn_vis_tsne.labels_
 
-        pkl.dump([labs_cnn, labs_cnn_pca, labs_cnn_umap, labs_cnn_tsne], open(f"{self.output_folder}/data/cnn_kmeans_clusters", "wb"))
+        pkl.dump([labs_cnn, labs_cnn_pca, labs_cnn_umap, labs_cnn_tsne], open(f"{self.output_folder}/data/cnn_kmeans_clusters.pkl", "wb"))
     

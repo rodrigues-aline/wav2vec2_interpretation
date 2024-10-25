@@ -12,6 +12,7 @@ import shutil
 from datasets import load_dataset
 from re import sub
 from math import ceil
+from time import time
 
 
 class Preprocessing(ABC):
@@ -25,23 +26,27 @@ class Preprocessing(ABC):
     
     
     def __init__(self, output_folder, path_corpus, device):
-        if Preprocessing._initialized: return
-        
         self.device = device
         self.path_corpus = path_corpus
         
-        self.output_folder = output_folder + '/wav2vec2_interpretation_results'
+        self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.output_data   = self.output_folder + '/data'
         self.output_images = self.output_folder + '/images'
         
-        if os.path.exists(self.output_folder):
-            shutil.rmtree(self.output_folder)  
-        
-        os.makedirs(self.output_folder)
-        os.makedirs(self.output_data)
-        os.makedirs(self.output_images)
-        
-        Preprocessing._initialized = True
+        if not Preprocessing._initialized: 
+            if os.path.exists(self.output_folder):
+                shutil.rmtree(self.output_folder)  
+            
+            os.makedirs(self.output_folder)
+            os.makedirs(self.output_data)
+            os.makedirs(self.output_images)
+            
+            Preprocessing._initialized = True
+            
+    
+    def freeze_data(self):
+        timestamp = str(int(time()))
+        os.system(f'mv "{self.output_folder}" "{self.output_folder}_{timestamp}"')
         
 
     def remove_special_characters(self, batch):

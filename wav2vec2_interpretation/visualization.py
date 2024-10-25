@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 class Visualization(ABC):
     def __init__(self, output_folder: str, path_vocab: str):
-        self.output_folder = output_folder
+        self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.path_vocab = path_vocab
         
         self.vocab = load(open(self.path_vocab))
@@ -31,7 +31,7 @@ class Visualization(ABC):
         
         self.lab = []
 
-        for l in self.lab:
+        for l in self.lab_reco:
             self.lab = np.concatenate((self.lab, self.lab_reco[l]))
         self.lab = np.array(self.lab)
         
