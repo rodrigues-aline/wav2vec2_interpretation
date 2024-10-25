@@ -7,6 +7,7 @@ from .dimension_reduction import DimensionalityReduction
 from .clustering import Clustering
 from .visualization import Visualization
 
+
 class Wav2vec2Interpretation():
     def __init__(self, model_pre: str, model_fine: str, path_vocab: str, path_corpus: str, output_folder: str, device: str = 'cpu'):
         
@@ -70,7 +71,7 @@ class Wav2vec2Interpretation():
         
         
     def preprocessing(self):    
-        print (f"---> Starting preprocessing on device='{self.device}'\n")   
+        print (f"\n---> Starting preprocessing on device='{self.device}'\n")   
         
         self.corpus = Corpus(self.output_folder, self.path_corpus, self.device)
         self.cnn_embed = CNNEmbeddings(self.output_folder, self.path_corpus, self.device)
@@ -110,7 +111,7 @@ class Wav2vec2Interpretation():
     def dimension_reduction(self, type: str = 'all'):
         # require preprocessing     
         if self.check_files():
-            print (f"---> Starting dimensionality reduction")  
+            print (f"\n---> Starting dimensionality reduction")  
             self.dr = DimensionalityReduction(self.output_folder)
             if type == 'pca':
                 print (f"\n\tPCA...") 
@@ -141,7 +142,7 @@ class Wav2vec2Interpretation():
             
             
     def clustering(self, eval: bool = True, save: bool = True) -> dict:
-        print (f"---> Starting clustering")
+        print (f"\n---> Starting clustering")
         self.clusters = Clustering(self.output_folder, self.path_vocab)
         results = dict()
         
@@ -162,6 +163,7 @@ class Wav2vec2Interpretation():
             
     
     def visualize_with_char(self):
+        print (f"\n---> Plot visualization (char)")
         self.plot = Visualization(self.output_folder, self.path_vocab)
         
         if self.check_files(vis=True):
@@ -172,8 +174,8 @@ class Wav2vec2Interpretation():
             print (f"\nPlots saved on '{self.output_folder}/wav2vec2_interpretation/images'")
         
         
-    
     def visualize_with_char_all(self, save_gif: bool = False):
+        print (f"\n---> Plot visualization char (all)")
         self.plot = Visualization(self.output_folder, self.path_vocab)
         
         if self.check_files(vis=True):
@@ -181,11 +183,12 @@ class Wav2vec2Interpretation():
         
             print (f"\nPlots saved on '{self.output_folder}/wav2vec2_interpretation/images'")
 
+
     def run(self):
         try:
             self.preprocessing()
             self.dimension_reduction()
-            self.clustering()
+            self.clustering(eval=True)
             self.visualize_with_char()
             self.visualize_with_char_all()
         except Exception as error:
