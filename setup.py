@@ -19,6 +19,20 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.10',
-    install_requires=[],
+    install_requires=[
+        "matplotlib==3.9.2",
+        "distinctipy==1.3.4",
+        "numba==0.60.0",
+        "numpy==1.23.5",
+        "umap-learn==0.5.6",
+        "librosa==0.10.2.post1",
+        "transformers==4.46.0",
+        "torch==2.5.0",
+        "coclust==0.2.1",
+        "datasets==3.0.2",
+        "scikit-learn==1.5.2",
+        "scipy==1.13.1",
+        "CairoSVG==2.7.1"
+    ],
     dependency_links=['https://github.com/rodrigues-aline/wav2vec2_interpretation']
 )
