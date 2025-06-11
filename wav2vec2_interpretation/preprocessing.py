@@ -87,8 +87,8 @@ class Preprocessing(ABC):
                 outputs = model.wav2vec2(input_values.to(self.device)).last_hidden_state
 
                 if input_values_2 != None:
-                    outputs_2 = (input_values_2.to(self.device)).last_hidden_state
-                    outputs = torch.cat((outputs,outputs_2), 1)
+                    outputs_2 = (input_values_2).last_hidden_state
+                    outputs = torch.cat((outputs, outputs_2), 1)
 
                 embeddings[file_path]  = outputs.to("cpu").numpy()
 
@@ -160,16 +160,12 @@ class CNNEmbeddings(Preprocessing):
 
 
     def extract(self, name_model: str):
-        print('aqui')
         model = Wav2Vec2ForCTC.from_pretrained(name_model, cache_dir = "tmp").to(self.device)
         processor =  Wav2Vec2FeatureExtractor.from_pretrained(name_model, cache_dir = "tmp")
         
         embeddings = dict()
 
         voices = self.dataset_processor(self.path_corpus)
-        
-        print(self.device)
-        print(next(model.parameters()).device)
 
         for voice in voices['corpus']:
             file_path = voice['path'].split('/')[-1]
@@ -177,8 +173,6 @@ class CNNEmbeddings(Preprocessing):
             speech, rate = librosa.load(f"{self.path_corpus}/audios/{file_path}", sr=16000)
             input_values = processor(speech, sampling_rate=16000, return_tensors="pt", padding="longest").input_values.to(self.device)
             
-            print(input_values.device)
-
             input_values_2 = None
             if (input_values.size()[1]/16000 > 300):
                 input_values_2 = input_values[:, ceil(input_values.size()[1]/2):].to(self.device)

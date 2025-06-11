@@ -82,10 +82,9 @@ class Wav2vec2Interpretation():
         self.pre_embed = PretrainedEmbeddings(self.output_folder, self.path_corpus, self.device)
         self.fine_embed = FinetunedEmbeddings(self.output_folder, self.path_corpus, self.device)
         
-        #print (f"\t1- Corpus (predicts_ids)...") 
-        #self.corpus.extract(self.model_fine)
+        print (f"\t1- Corpus (predicts_ids)...") 
+        self.corpus.extract(self.model_fine)
         print (f"\n\t2- CNN embeddings...") 
-        print('aqui 1')
         self.cnn_embed.extract(self.model_fine)
         print (f"\n\t3- Pretrained transformers layers...") 
         self.pre_embed.extract(self.model_pre)
