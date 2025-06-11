@@ -172,6 +172,10 @@ class CNNEmbeddings(Preprocessing):
             # Loading the audio file
             speech, rate = librosa.load(f"{self.path_corpus}/audios/{file_path}", sr=16000)
             input_values = processor(speech, sampling_rate=16000, return_tensors="pt", padding="longest").input_values.to(self.device)
+            
+            print(self.device)
+            print(next(model.parameters()).device)
+            print(input_values.device)
 
             input_values_2 = None
             if (input_values.size()[1]/16000 > 300):
@@ -181,8 +185,8 @@ class CNNEmbeddings(Preprocessing):
                 outputs = model.wav2vec2.feature_extractor(input_values).transpose(1, 2)
 
                 if input_values_2 != None:
-                    outputs_2 = model.wav2vec2.feature_extractor(input_values).transpose(1, 2)
-                    outputs = torch.cat((outputs,outputs_2), 1)
+                    outputs_2 = model.wav2vec2.feature_extractor(input_values_2).transpose(1, 2)
+                    outputs = torch.cat((outputs, outputs_2), 1)
 
                 embeddings[file_path]  = outputs.to("cpu").numpy()
 
