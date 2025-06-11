@@ -175,7 +175,7 @@ class CNNEmbeddings(Preprocessing):
 
             input_values_2 = None
             if (input_values.size()[1]/16000 > 300):
-                input_values_2 = input_values[:, ceil(input_values.size()[1]/2):]
+                input_values_2 = input_values[:, ceil(input_values.size()[1]/2):].to(self.device)
                 input_values = input_values[:, :ceil(input_values.size()[1]/2)]
             with torch.no_grad():
                 outputs = model.wav2vec2.feature_extractor(input_values).transpose(1, 2)
