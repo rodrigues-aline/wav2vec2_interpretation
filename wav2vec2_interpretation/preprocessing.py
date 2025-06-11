@@ -78,10 +78,10 @@ class Preprocessing(ABC):
             file_path = voice['path'].split('/')[-1]
             # Loading the audio file
             speech, rate = librosa.load(f"{self.path_corpus}/audios/{file_path}", sr=16000)
-            input_values = processor(speech, sampling_rate=16000, return_tensors="pt", padding="longest").input_values
+            input_values = processor(speech, sampling_rate=16000, return_tensors="pt", padding="longest").input_values.to(self.device)
             input_values_2 = None
             if (input_values.size()[1]/16000 > 300):
-                input_values_2 = input_values[:, ceil(input_values.size()[1]/2):]
+                input_values_2 = input_values[:, ceil(input_values.size()[1]/2):].to(self.device)
                 input_values = input_values[:, :ceil(input_values.size()[1]/2)]
             with torch.no_grad():
                 outputs = model.wav2vec2(input_values.to(self.device)).last_hidden_state
