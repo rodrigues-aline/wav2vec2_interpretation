@@ -114,6 +114,7 @@ class Corpus(Preprocessing):
             labels = processor.tokenizer.convert_ids_to_tokens(
                 list(range(processor.tokenizer.vocab_size))
             )
+            labels.append("")
             decoder = build_ctcdecoder(
                 labels=labels,
                 kenlm_model_path=self.path_model_language
