@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from transformers import (Wav2Vec2ForCTC, Wav2Vec2FeatureExtractor, Wav2Vec2Processor)
+from pyctcdecode import build_ctcdecoder
 
 import pickle as pkl
 import numpy as np
@@ -25,9 +26,10 @@ class Preprocessing(ABC):
         return cls._instance
     
     
-    def __init__(self, output_folder, path_corpus, device):
+    def __init__(self, output_folder: str, path_corpus: str, path_model_language: str, device):
         self.device = device
         self.path_corpus = path_corpus
+        self.path_model_language = path_model_language
         
         self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.output_data   = self.output_folder + '/data'
@@ -56,7 +58,7 @@ class Preprocessing(ABC):
         return batch
     
     
-    def dataset_processor(self, path):
+    def dataset_processor(self, path: str):
         # load transcriptions
         voice  = load_dataset("csv", data_files={"corpus": f"{path}/metadata.csv"})
         # pre-processing
@@ -99,16 +101,26 @@ class Preprocessing(ABC):
     
 
 class Corpus(Preprocessing):
-    def __init__(self, output_folder, path_corpus, device):
-        super().__init__(output_folder, path_corpus, device)  
+    def __init__(self, output_folder, path_corpus, model_language = None, device = 'cpu'):
+        super().__init__(output_folder, path_corpus, model_language, device)  
         
 
     def extract(self, name_model: str):
         processor = Wav2Vec2Processor.from_pretrained(name_model)
         model_trained = Wav2Vec2ForCTC.from_pretrained(name_model).to(self.device)
         
-        transcripts = dict()
+        decoder = None
+        if self.path_model_language is not None:
+            labels = processor.tokenizer.convert_ids_to_tokens(
+                list(range(processor.tokenizer.vocab_size))
+            )
+            decoder = build_ctcdecoder(
+                labels=labels,
+                kenlm_model_path=self.path_model_language
+            )
         
+        transcripts = dict()
+        transcripts_with_lm = dict()
         voices = self.dataset_processor(self.path_corpus)
 
         for voice in voices['corpus']:
@@ -118,19 +130,32 @@ class Corpus(Preprocessing):
 
             # Getting transcription
             inputs = processor(audio, sampling_rate=16000, return_tensors="pt").input_values.to(self.device)
-
-            logits = model_trained(inputs).logits
-            predicted_ids = torch.argmax(logits, dim=-1)
             
-            transcripts[f'{self.path_corpus}/audios/{patch_audio}'] = np.array(predicted_ids[0].cpu())
+            with torch.no_grad():
+                logits = model_trained(inputs).logits
+            
+            if self.path_model_language is not None:
+                probs = torch.nn.functional.softmax(logits, dim=-1)[0].cpu().numpy()
+                
+                transcription = decoder.decode(probs)
+                predicted_ids_lm = np.array(processor.tokenizer(transcription).input_ids)    
+                transcripts_with_lm[f'{self.path_corpus}/audios/{patch_audio}'] = predicted_ids_lm
+                
+            predicted_ids = torch.argmax(logits, dim=-1)
+            predicted_ids = np.array(predicted_ids[0].cpu())
+            
+            transcripts[f'{self.path_corpus}/audios/{patch_audio}'] = predicted_ids
 
+        if self.path_model_language is not None:
+            with open(f'{self.output_data}/predicted_ids_lm.pkl', 'wb') as f:
+                pkl.dump(transcripts_with_lm, f)
         with open(f'{self.output_data}/predicted_ids.pkl', 'wb') as f:
             pkl.dump(transcripts, f)
     
 
 class CNNEmbeddings(Preprocessing):
     def __init__(self, output_folder, path_corpus, device):
-        super().__init__(output_folder, path_corpus, device) 
+        super().__init__(output_folder, path_corpus, None, device) 
 
 
     def extract(self, name_model: str):
@@ -165,7 +190,7 @@ class CNNEmbeddings(Preprocessing):
 
 class FinetunedEmbeddings(Preprocessing):
     def __init__(self, output_folder, path_corpus, device):
-        super().__init__(output_folder, path_corpus, device)  
+        super().__init__(output_folder, path_corpus, None, device)  
 
 
     def extract(self, name_model: str):
@@ -174,7 +199,7 @@ class FinetunedEmbeddings(Preprocessing):
 
 class PretrainedEmbeddings(Preprocessing):
     def __init__(self, output_folder, path_corpus, device):
-        super().__init__(output_folder, path_corpus, device)  
+        super().__init__(output_folder, path_corpus, None, device)  
 
 
     def extract(self, name_model: str):

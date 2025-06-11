@@ -9,7 +9,7 @@ from .visualization import Visualization
 
 
 class Wav2vec2Interpretation():
-    def __init__(self, model_pre: str, model_fine: str, path_vocab: str, path_corpus: str, output_folder: str, device: str = 'cpu'):
+    def __init__(self, model_pre: str, model_fine: str, model_language: str, path_vocab: str, path_corpus: str, output_folder: str, device: str = 'cpu'):
         
         def check_str(s: str, parameter: str):
             if s is None or s == "": raise ValueError(f'parameter ({parameter}) is invalid')
@@ -43,6 +43,7 @@ class Wav2vec2Interpretation():
         
         self.model_pre = check_str(model_pre.strip(), 'model_pre')
         self.model_fine = check_str(model_fine.strip(), 'model_pre')
+        self.model_language = check_str(model_language.strip(), 'model_language')
         
         self.path_vocab = check_str(path_vocab.strip(), 'path_vocab')
         self.path_corpus = check_str(path_corpus.strip(), 'path_corpus')
@@ -51,6 +52,8 @@ class Wav2vec2Interpretation():
         
         if not path.isfile(self.path_vocab):
             raise ValueError(f"(path_vocab) not found")
+        if self.model_language is not None and not path.isfile(self.model_language):
+            raise ValueError(f"(model_language) not found")
         
         if not path.isdir(self.path_corpus):
             role_corpus()
@@ -61,6 +64,7 @@ class Wav2vec2Interpretation():
         if not path.isfile(self.path_corpus+'/metadata.csv'):
             role_corpus()
             raise ValueError(f"(path_corpus) not found 'metadata.csv' file")
+        
         
         if self.device not in ['cuda', 'cpu']:
             raise ValueError(f"(device) requires 'cuda' or 'cpu'")
@@ -73,7 +77,7 @@ class Wav2vec2Interpretation():
     def preprocessing(self):    
         print (f"\n---> Starting preprocessing on device='{self.device}'\n")   
         
-        self.corpus = Corpus(self.output_folder, self.path_corpus, self.device)
+        self.corpus = Corpus(self.output_folder, self.path_corpus, self.model_language, self.device)
         self.cnn_embed = CNNEmbeddings(self.output_folder, self.path_corpus, self.device)
         self.pre_embed = PretrainedEmbeddings(self.output_folder, self.path_corpus, self.device)
         self.fine_embed = FinetunedEmbeddings(self.output_folder, self.path_corpus, self.device)

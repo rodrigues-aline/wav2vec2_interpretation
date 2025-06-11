@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="wav2vec2-interpretation",
-    version="0.0.4",
+    version="0.0.5",
     author="Aline Rodrigues",
     author_email="rodrigues.aline.n@gmail.com",
     description="Investigating Wav2vec2.0 models context representations and the effects of fine-tuning",
