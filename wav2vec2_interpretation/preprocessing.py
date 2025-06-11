@@ -160,12 +160,16 @@ class CNNEmbeddings(Preprocessing):
 
 
     def extract(self, name_model: str):
+        print('aqui')
         model = Wav2Vec2ForCTC.from_pretrained(name_model, cache_dir = "tmp").to(self.device)
         processor =  Wav2Vec2FeatureExtractor.from_pretrained(name_model, cache_dir = "tmp")
         
         embeddings = dict()
 
         voices = self.dataset_processor(self.path_corpus)
+        
+        print(self.device)
+        print(next(model.parameters()).device)
 
         for voice in voices['corpus']:
             file_path = voice['path'].split('/')[-1]
@@ -173,8 +177,6 @@ class CNNEmbeddings(Preprocessing):
             speech, rate = librosa.load(f"{self.path_corpus}/audios/{file_path}", sr=16000)
             input_values = processor(speech, sampling_rate=16000, return_tensors="pt", padding="longest").input_values.to(self.device)
             
-            print(self.device)
-            print(next(model.parameters()).device)
             print(input_values.device)
 
             input_values_2 = None
