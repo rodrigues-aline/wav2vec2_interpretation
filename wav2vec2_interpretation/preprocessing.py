@@ -7,6 +7,7 @@ import pickle as pkl
 import numpy as np
 import librosa
 import torch
+import gc
 import os
 import shutil
 
@@ -45,7 +46,12 @@ class Preprocessing(ABC):
             
             Preprocessing._initialized = True
             
-    
+    def empty_cache(self):
+        gc.collect()
+        torch.cuda.empty_cache()
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            
+            
     def freeze_data(self):
         timestamp = str(int(time()))
         os.system(f'mv "{self.output_folder}" "{self.output_folder}_{timestamp}"')
@@ -67,6 +73,7 @@ class Preprocessing(ABC):
     
     
     def extract_pre_fine(self, name_model: str, type_model: str):
+        self.empty_cache()
         model = Wav2Vec2ForCTC.from_pretrained(name_model, cache_dir = "tmp").to(self.device)
         processor =  Wav2Vec2Processor.from_pretrained(name_model, cache_dir = "tmp")
 
@@ -106,6 +113,7 @@ class Corpus(Preprocessing):
         
 
     def extract(self, name_model: str):
+        self.empty_cache()
         processor = Wav2Vec2Processor.from_pretrained(name_model)
         model_trained = Wav2Vec2ForCTC.from_pretrained(name_model).to(self.device)
         
@@ -160,6 +168,7 @@ class CNNEmbeddings(Preprocessing):
 
 
     def extract(self, name_model: str):
+        self.empty_cache()
         model = Wav2Vec2ForCTC.from_pretrained(name_model, cache_dir = "tmp").to(self.device)
         processor =  Wav2Vec2FeatureExtractor.from_pretrained(name_model, cache_dir = "tmp")
         

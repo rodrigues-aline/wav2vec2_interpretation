@@ -145,9 +145,9 @@ class Wav2vec2Interpretation():
             print (f"\nPlots saved on '{self.output_folder}/wav2vec2_interpretation/images'")
             
             
-    def clustering(self, eval: bool = True, save: bool = True) -> dict:
+    def clustering(self, eval: bool = True, save: bool = True, model_language: bool = False) -> dict:
         print (f"\n---> Starting clustering")
-        self.clusters = Clustering(self.output_folder, self.path_vocab)
+        self.clusters = Clustering(self.output_folder, self.path_vocab, model_language)
         results = dict()
         
         if self.check_files(vis=True):
@@ -159,6 +159,11 @@ class Wav2vec2Interpretation():
                 results['metrics'] = self.clusters.evaluate_clusters(save)
                 results['pretrained'] = self.clusters.evaluate_clusters_char('pre', save)
                 results['finetuned'] = self.clusters.evaluate_clusters_char('fine', save)
+                
+                if model_language:
+                    results['metrics'] = self.clusters.evaluate_clusters(save, model_language)
+                    results['pretrained'] = self.clusters.evaluate_clusters_char('pre', save, model_language)
+                    results['finetuned'] = self.clusters.evaluate_clusters_char('fine', save, model_language)
                 if save:
                     print (f"\nResults saved on '{self.output_folder}/wav2vec2_interpretation/data'")
         

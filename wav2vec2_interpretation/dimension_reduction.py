@@ -1,6 +1,7 @@
 from abc import ABC
 
-from sklearn.manifold import TSNE
+#from sklearn.manifold import TSNE
+from openTSNE import TSNE
 from sklearn.decomposition import PCA
 
 import umap
@@ -35,8 +36,9 @@ class DimensionalityReduction(ABC):
         
         
     def extract_tsne(self, type_embedding: str): 
-        t_sne = TSNE(n_components=2,random_state=self.seed)
-        data_tsne = t_sne.fit_transform(self.data[type_embedding])
+        tsne = TSNE(n_components=2,random_state=self.seed, n_jobs=200)
+        data_tsne = tsne.fit(self.data[type_embedding])
+        
         plt.scatter(data_tsne[:,0], data_tsne[:,1], s=0.01)
         plt.savefig(f"{self.output_folder}/images/{type_embedding}_tsne.svg")
         plt.close('all')

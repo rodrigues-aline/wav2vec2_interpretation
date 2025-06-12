@@ -13,9 +13,10 @@ import matplotlib.pyplot as plt
 
 
 class Clustering(ABC):
-    def __init__(self, output_folder: str, path_vocab: str):
+    def __init__(self, output_folder: str, path_vocab: str, model_language: bool = False):
         self.output_folder = output_folder + '/wav2vec2_interpretation'
         self.path_vocab = path_vocab
+        self.model_language = model_language
         
         self.vocab = load(open(self.path_vocab))
         self.inv_vocab = {v: k for k, v in self.vocab.items()}
@@ -37,7 +38,11 @@ class Clustering(ABC):
                               cnn  = dict(pca=cnn_pca,  tsne=cnn_tsne,  umap=cnn_umap))
         
         self.lab =  np.concatenate(tuple(pkl.load(open(f'{self.output_folder}/data/predicted_ids.pkl', 'rb')).values()))
-        self.reco_lab = pkl.load(open(f'{self.output_folder}/data/predicted_ids.pkl', 'rb'))
+        
+        if self.model_language:
+            self.lab_lm =  np.concatenate(tuple(pkl.load(open(f'{self.output_folder}/data/predicted_ids_lm.pkl', 'rb')).values()))
+        
+        #self.reco_lab = pkl.load(open(f'{self.output_folder}/data/predicted_ids.pkl', 'rb'))
         
     
     def convert_types(self, obj):
@@ -48,26 +53,29 @@ class Clustering(ABC):
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
         
     
-    def evaluate_clusters(self, save: bool = True) -> dict:
+    def evaluate_clusters(self, save: bool = True, model_language: bool = False) -> dict:
         labs_cnn, _,  _, _              = pkl.load(open(f"{self.output_folder}/data/cnn_kmeans_clusters.pkl","rb"))
         labs_pre, _,  labs_pre_umap, _  = pkl.load(open(f"{self.output_folder}/data/pre_kmeans_clusters.pkl","rb"))
         labs_fine, _, labs_fine_umap, _ = pkl.load(open(f"{self.output_folder}/data/fine_kmeans_clusters.pkl","rb"))
+        
+        
+        lab = self.lab_lm if model_language else self.lab
 
         metrics_asr = dict()
         for f in [adjusted_mutual_info_score, mutual_info_score, homogeneity_score, completeness_score]:
             m = str(f).split(' ')[1]
             metrics_asr[m] = dict()
 
-            metrics_asr[m]["CNN vs Predictions"] = f(self.lab, labs_cnn)
+            metrics_asr[m]["CNN vs Predictions"] = f(lab, labs_cnn)
             metrics_asr[m]["CNN vs Pre"]         = f(labs_pre, labs_cnn)
             metrics_asr[m]["CNN vs Fine"]        = f(labs_fine, labs_cnn)
 
-            metrics_asr[m]["Predictions vs Pre UMAP"] = f(self.lab, labs_pre_umap)
-            metrics_asr[m]["Predictions vs Pre"]      = f(self.lab, labs_pre)
+            metrics_asr[m]["Predictions vs Pre UMAP"] = f(lab, labs_pre_umap)
+            metrics_asr[m]["Predictions vs Pre"]      = f(lab, labs_pre)
             metrics_asr[m]["Pre vs Pre UMAP"]         = f(labs_pre, labs_pre_umap)
 
-            metrics_asr[m]["Predictions vs Fine UMAP"] = f(self.lab, labs_fine_umap)
-            metrics_asr[m]["Predictions vs Fine"]      = f(self.lab, labs_fine)
+            metrics_asr[m]["Predictions vs Fine UMAP"] = f(lab, labs_fine_umap)
+            metrics_asr[m]["Predictions vs Fine"]      = f(lab, labs_fine)
             metrics_asr[m]["Fine vs Fine UMAP"]        = f(labs_fine, labs_fine_umap)
 
             metrics_asr[m]["Fine vs Pre"]      = f(labs_fine, labs_pre)
@@ -82,20 +90,22 @@ class Clustering(ABC):
         metrics_asr[m]['finetuned']       = silhouette_score(self.data['fine'], labs_fine, metric='cosine')
         
         if save:
-            with open(f'{self.output_folder}/data/eval_clusters_metrics.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_metrics{'_ml' if model_language else ''}.json', 'w') as f:
                 dump(metrics_asr, f, indent=4, ensure_ascii=False, default=self.convert_types)
         
         return metrics_asr
         
     
-    def evaluate_clusters_char(self, type_embedding: str, save: bool = True) -> dict:
+    def evaluate_clusters_char(self, type_embedding: str, save: bool = True, model_language: bool = False) -> dict:
         labs, _, _, _ = pkl.load(open(f"{self.output_folder}/data/{type_embedding}_kmeans_clusters.pkl","rb"))        
         discovered_map = {}
         clusters_char ={}
+        
+        lab = self.lab_lm if model_language else self.lab
 
         for idx in range(len(self.inv_vocab)):
             # Ensure labs_pre is a numpy array and lab==idx results in a boolean array
-            data = np.array(labs)[np.array(self.lab==idx)]
+            data = np.array(labs)[np.array(lab==idx)]
             # Use np.arange to create bins for cluster labels
             distr,_ = np.histogram(data, bins=np.arange(np.max(labs) + 2)) # +2 to include all possible cluster labels
             max_category = np.argmax(distr)
@@ -108,16 +118,16 @@ class Clustering(ABC):
 
         mapping = {}
         for idx in range(np.max(labs)+1):
-            data = self.lab[labs==idx]
+            data = lab[labs==idx]
             distr,_ = np.histogram(data, list(np.arange(np.max(labs))))
             max_category = np.argmax(distr[1:])
             mapping[idx] = max_category
             
         if save:
-            with open(f'{self.output_folder}/data/eval_clusters_discovered_map_{type_embedding}.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_discovered_map_{type_embedding}{'_ml' if model_language else ''}.json', 'w') as f:
                 dump(discovered_map, f, indent=4, ensure_ascii=False)
 
-            with open(f'{self.output_folder}/data/eval_clusters_char_{type_embedding}.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_char_{type_embedding}{'_ml' if model_language else ''}.json', 'w') as f:
                 dump(clusters_char, f, indent=4, ensure_ascii=False)
                            
         return dict(discovered_map=discovered_map, mapping=mapping)
