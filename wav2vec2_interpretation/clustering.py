@@ -89,8 +89,10 @@ class Clustering(ABC):
         metrics_asr[m]['finetuned']       = silhouette_score(self.data['fine'], labs_fine_umap, metric='cosine')
         metrics_asr[m]['finetuned']       = silhouette_score(self.data['fine'], labs_fine, metric='cosine')
         
+        alias = '_ml' if model_language else ''
+        
         if save:
-            with open(f'{self.output_folder}/data/eval_clusters_metrics{'_ml' if model_language else ''}.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_metrics{alias}.json', 'w') as f:
                 dump(metrics_asr, f, indent=4, ensure_ascii=False, default=self.convert_types)
         
         return metrics_asr
@@ -122,12 +124,14 @@ class Clustering(ABC):
             distr,_ = np.histogram(data, list(np.arange(np.max(labs))))
             max_category = np.argmax(distr[1:])
             mapping[idx] = max_category
+        
+        alias = '_ml' if model_language else ''
             
         if save:
-            with open(f'{self.output_folder}/data/eval_clusters_discovered_map_{type_embedding}{'_ml' if model_language else ''}.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_discovered_map_{type_embedding}{alias}.json', 'w') as f:
                 dump(discovered_map, f, indent=4, ensure_ascii=False)
 
-            with open(f'{self.output_folder}/data/eval_clusters_char_{type_embedding}{'_ml' if model_language else ''}.json', 'w') as f:
+            with open(f'{self.output_folder}/data/eval_clusters_char_{type_embedding}{alias}.json', 'w') as f:
                 dump(clusters_char, f, indent=4, ensure_ascii=False)
                            
         return dict(discovered_map=discovered_map, mapping=mapping)
