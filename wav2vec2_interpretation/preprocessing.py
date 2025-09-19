@@ -141,8 +141,7 @@ class Corpus(Preprocessing):
                 logits = model_trained(inputs).logits
             
             if self.path_model_language is not None:
-                probs = torch.nn.functional.softmax(logits, dim=-1)[0].cpu().numpy()
-                
+                probs = logits.softmax(dim=-1).squeeze().detach().cpu().numpy()
                 transcription = decoder.decode(probs)
                 predicted_ids_lm = np.array(processor.tokenizer(transcription).input_ids)    
                 transcripts_with_lm[f'{self.path_corpus}/audios/{patch_audio}'] = predicted_ids_lm
