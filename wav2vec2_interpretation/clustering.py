@@ -33,6 +33,10 @@ class Clustering(ABC):
         pre_pca,  pre_tsne,  pre_umap = pkl.load(open(f'{self.output_folder}/data/pre_visualizations.pkl', 'rb'))
         fine_pca, fine_tsne, fine_umap = pkl.load(open(f'{self.output_folder}/data/fine_visualizations.pkl', 'rb'))
         
+        cnn_pca, cnn_tsne, cnn_umap   = map(lambda x: np.asarray(x, dtype=np.float32), [cnn_pca, cnn_tsne, cnn_umap])
+        pre_pca, pre_tsne, pre_umap   = map(lambda x: np.asarray(x, dtype=np.float32), [pre_pca, pre_tsne, pre_umap])
+        fine_pca, fine_tsne, fine_umap= map(lambda x: np.asarray(x, dtype=np.float32), [fine_pca, fine_tsne, fine_umap])
+        
         self.data_comp = dict(pre  = dict(pca=pre_pca,  tsne=pre_tsne,  umap=pre_umap),
                               fine = dict(pca=fine_pca, tsne=fine_tsne, umap=fine_umap),
                               cnn  = dict(pca=cnn_pca,  tsne=cnn_tsne,  umap=cnn_umap))
