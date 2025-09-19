@@ -120,7 +120,6 @@ class Corpus(Preprocessing):
         decoder = None
         if self.path_model_language is not None:
             labels = processor.tokenizer.convert_ids_to_tokens(list(range(model_trained.config.vocab_size)))
-            print(labels)
             decoder = build_ctcdecoder(
                 labels=labels,
                 kenlm_model_path=self.path_model_language
@@ -140,10 +139,6 @@ class Corpus(Preprocessing):
             
             with torch.no_grad():
                 logits = model_trained(inputs).logits
-            
-            print("Logits shape:", logits.shape[-1])
-            print("Vocab size from config:", model_trained.config.vocab_size)
-            print("Tokenizer vocab size:", len(processor.tokenizer.get_vocab()))
             
             if self.path_model_language is not None:
                 probs = logits.softmax(dim=-1).squeeze().detach().cpu().numpy()
