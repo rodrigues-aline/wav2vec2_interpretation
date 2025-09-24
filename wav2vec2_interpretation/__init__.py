@@ -151,11 +151,15 @@ class Wav2vec2Interpretation():
         results = dict()
         
         if self.check_files(vis=True):
+            print(f"\n---> Clustering CNN embeddings")
             self.clusters.run('cnn')
+            print(f"\n---> Clustering PRE embeddings")
             self.clusters.run('pre')
+            print(f"\n---> Clustering FINE embeddings")
             self.clusters.run('fine')
             
             if eval:
+                print(f"\n---> Evaluating clusters")
                 results['metrics'] = self.clusters.evaluate_clusters(save)
                 results['pretrained'] = self.clusters.evaluate_clusters_char('pre', save)
                 results['finetuned'] = self.clusters.evaluate_clusters_char('fine', save)

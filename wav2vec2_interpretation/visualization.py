@@ -19,6 +19,9 @@ class Visualization(ABC):
         self.vocab = load(open(self.path_vocab))
         self.inv_vocab = {v: k for k, v in self.vocab.items()}
         
+        self.tokens_ignore = ["<pad>", "|", "<unk>", "-", "<s>", "</s>", "[UNK]", "[PAD]", " "]
+        self.indices_ignore = [self.vocab[t] for t in self.tokens_ignore if t in self.vocab]
+        
         cnn_pca,  cnn_tsne,  cnn_umap = pkl.load(open(f'{self.output_folder}/data/cnn_visualizations.pkl', 'rb'))
         pre_pca,  pre_tsne,  pre_umap = pkl.load(open(f'{self.output_folder}/data/pre_visualizations.pkl', 'rb'))
         fine_pca, fine_tsne, fine_umap = pkl.load(open(f'{self.output_folder}/data/fine_visualizations.pkl', 'rb'))
@@ -40,7 +43,9 @@ class Visualization(ABC):
         
         
     def visualize_with_char(self, type_embedding: str):
-        for i in range(len(self.legend)-1):
+        for i in range(len(self.legend)):
+            if i in self.indices_ignore:
+                continue
             idx = np.where(self.lab==i)
             plt.scatter(self.data_comp[type_embedding]['tsne'][idx, 0], self.data_comp[type_embedding]['tsne'][idx, 1], s=0.01, color=self.cmaps[i], label=self.inv_vocab[i])
 
@@ -49,7 +54,9 @@ class Visualization(ABC):
         plt.close('all')
         plt.figure().clear()
         
-        for i in range(len(self.legend)-1):
+        for i in range(len(self.legend)):
+            if i in self.indices_ignore:
+                continue
             idx = np.where(self.lab==i)
             plt.scatter(self.data_comp[type_embedding]['umap'][idx, 0], self.data_comp[type_embedding]['umap'][idx, 1], s=0.01, color=self.cmaps[i], label=self.inv_vocab[i])
 
@@ -76,6 +83,8 @@ class Visualization(ABC):
         
     def visualize_with_char_all(self, save_gif: bool = True):
         for i in range(len(self.legend)):
+            if i in self.indices_ignore:
+                continue
             fig, axs = plt.subplots(1, 3, figsize=(15, 5))
             idx = np.where(self.lab == i)
 
@@ -96,6 +105,8 @@ class Visualization(ABC):
             plt.close()
 
         for i in range(len(self.legend)):
+            if i in self.indices_ignore:
+                continue
             fig, axs = plt.subplots(1, 3, figsize=(15, 5))
             idx = np.where(self.lab == i)
 
